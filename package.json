@@ -1,0 +1,37 @@
+{
+  "name": "lime-transport-websocket",
+  "version": "0.0.0",
+  "description": "WebSocket transport class for the LIME protocol",
+  "main": "WebSocketTransport.js",
+  "files": [
+    "WebSocketTransport.js"
+  ],
+  "scripts": {
+    "test": "./node_modules/.bin/mocha ./test --recursive -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/takenet/lime-transport-websocket.git"
+  },
+  "keywords": [
+    "lime",
+    "websocket",
+    "ws",
+    "http",
+    "transport"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/takenet/lime-transport-websocket/issues"
+  },
+  "homepage": "https://github.com/takenet/lime-transport-websocket#readme",
+  "dependencies": {
+    "bluebird": "^3.4.0",
+    "lime-js": "^2.0.1",
+    "websocket": "^1.0.23"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^2.5.3"
+  }
+}
