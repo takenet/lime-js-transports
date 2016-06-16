@@ -4,14 +4,14 @@
     } else if (typeof define === 'function' && define.amd) {
         define(['Lime', 'Promise', 'WebSocket'], factory);
     } else if (typeof exports === 'object') {
-        exports['MessagingHubClient'] = factory(require('lime-js'), require('bluebird'), require('websocket').w3cwebsocket);
+        exports['WebSocketTransport'] = factory(require('lime-js'), require('bluebird'), require('websocket').w3cwebsocket);
     } else {
-        root['MessagingHubClient'] = factory(root['Lime'], root['Promise'], root['WebSocket']);
+        root['WebSocketTransport'] = factory(root['Lime'], root['Promise'], root['WebSocket']);
     }
 }(this, function (Lime, Promise, WebSocket) {
 
     var fvoid = function() { return undefined; };
-    var log = console ? console.debug || console.log : fvoid;
+    var log = console ? (console.debug || console.log).bind(console) : fvoid;
 
     function ensureSocketOpen(webSocket) {
         if (!webSocket || webSocket.readyState !== webSocket.OPEN) {
@@ -96,15 +96,11 @@
     WebSocketTransport.prototype.getSupportedCompression = function() {
         return [SessionCompression.NONE];
     };
-    WebSocketTransport.prototype.setCompression = function(compression) {
-        throw new Error('Compression change is not supported');
-    };
+    WebSocketTransport.prototype.setCompression = fvoid;
     WebSocketTransport.prototype.getSupportedEncryption = function() {
         return [SessionEncryption.TLS, SessionEncryption.NONE];
     };
-    WebSocketTransport.prototype.setEncryption = function(encryption) {
-        throw new Error('Encryption change is not supported');
-    };
+    WebSocketTransport.prototype.setEncryption = fvoid;
     WebSocketTransport.prototype.onOpen = fvoid;
     WebSocketTransport.prototype.onClose = fvoid;
     WebSocketTransport.prototype.onError = fvoid;
