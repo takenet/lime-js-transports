@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>LIME Websocket Client Console</title>
+    <style type="text/css">
+    body {
+        font-family: sans-serif;
+        font-size: 15px;
+        color: #424242;
+    }
+    form {
+        padding: 15px 0;
+        border-bottom: 1px #424242 solid;
+    }
+    label {
+        font-weight: bold;
+        text-transform: uppercase;
+        display: block;
+    }
+    .form-group {
+        margin-bottom: 10px;
+    }
+    </style>
+</head>
+<body>
+    <form id="connectionForm" onsubmit="connect()">
+        <div class="form-group">
+            <label for="instanceInput">Instance</label>
+            <input type="text" id="instanceInput" value="web" />
+        </div>
+        <div class="form-group">
+            <label for="identityInput">Identity</label>
+            <input type="text" id="identityInput" value="" />
+        </div>
+        <div class="form-group">
+            <label for="passwordInput">Password</label>
+            <input type="password" id="passwordInput" value="" />
+        </div>
+        <div class="form-group">
+            <label for="uriInput">URI</label>
+            <input type="text" id="uriInput" value="ws://msging.net:8081" />
+        </div>
+        <div class="form-group">
+            <button id="connectButton" type="submit">Connect</button>
+            <button id="disconnectButton" type="reset" onclick="disconnect()" disabled>Disconnect</button>
+            <button id="setPresenceButton" type="button" onclick="setPresence(true)">Set presence available</button>
+        </div>
+    </form>
+
+    <form id="messageForm" onsubmit="sendMessage()">
+        <div class="form-group">
+            <label for="messageToInput">To</label>
+            <input type="text" id="messageToInput" />
+        </div>
+        <div class="form-group">
+            <label for="messageContentInput">Content</label>
+            <input type="text" id="messageContentInput" />
+        </div>
+        <div class="form-group">
+            <button id="sendButton" onclick="sendMessage()">Send message</button>
+        </div>
+    </form>
+
+    <form>
+        <div class="form-group">
+            <label for="logTextarea">Log</label>
+            <textarea id="logTextarea" readonly></textarea>
+        </div>
+    </form>
+
+    <script type="text/javascript" src="../node_modules/lime-js/dist/lime.js"></script>
+    <script type="text/javascript" src="../WebSocketTransport.js"></script>
+    <script type="text/javascript">
+    var instanceInput = document.getElementById('instanceInput');
+    var identityInput = document.getElementById('identityInput');
+    var passwordInput = document.getElementById('passwordInput');
+    var uriInput = document.getElementById('uriInput');
+    var connectButton = document.getElementById('connectButton');
+    var disconnectButton = document.getElementById('disconnectButton');
+
+    var messageToInput = document.getElementById('messageToInput');
+    var messageContentInput = document.getElementById('messageContentInput');
+    var sendMessageButton = document.getElementById('sendMessageButton');
+
+    var logTextarea = document.getElementById('logTextarea');
+
+    var transport = new WebSocketTransport(true);
+    var clientChannel = new Lime.ClientChannel(transport, true, true);
+
+    clientChannel.onMessage = function(m) {
+        logTextarea.value += 'Message received - From: ' + m.from + ' - To: ' + m.to + ' - Content: ' + JSON.stringify(m.content) + '\n';
+    };
+    clientChannel.onNotification = function(n) {
+        logTextarea.value += 'Notification received - From: ' + n.from + ' - To: ' + n.to + ' - Event: ' + n.event + ' - Reason: ' + n.reason + '\n';
+    };
+    clientChannel.onCommand = function(c) {
+        logTextarea.value += 'Command received - From: '  + c.from + ' - To: ' + c.to + ' - Method: ' + c.method + ' - URI: ' + c.uri + ' - Resource: ' + c.resource + ' - Status: ' + c.status + ' - Reason: ' + c.reason + '\n';
+    };
+
+    transport.onClose = function() {
+        connectButton.disabled = false;
+        disconnectButton.disabled = true;
+        logTextarea.value += 'Transport is closed' + '\n';
+    };
+    transport.onError = function(err) {
+        logTextarea.value += 'Transport failed: ' + err.message + '\n';
+    };
+
+    function establishSession(uri, identity, instance, password) {
+        transport
+        .open(uri)
+        .then(function() {
+            var authentication;
+            if (password) {
+                authentication = new Lime.PlainAuthentication();
+                authentication.password = btoa(password);
+            } else {
+                authentication = new Lime.GuestAuthentication();
+            }
+            return clientChannel.establishSession(Lime.SessionEncryption.NONE, Lime.SessionCompression.NONE, identity, authentication, instance);
+        })
+        .then(function(session) {
+            logTextarea.value += 'Session id: ' + session.id + ' - State: ' + session.state + '\n';
+            if (session.state === Lime.SessionState.established) {
+                connectButton.disabled = true;
+                disconnectButton.disabled = false;
+            }
+            return session;
+        })
+        .catch(function(err) {
+            console.error(err);
+            logTextarea.value += 'An error occurred: ' + err + '\n';
+        });
+    }
+
+    function connect() {
+        event.preventDefault();
+        establishSession(uriInput.value, identityInput.value, instanceInput.value, passwordInput.value);
+        return false;
+    }
+    function disconnect() {
+        event.preventDefault();
+        clientChannel.sendFinishingSession();
+        return false;
+    }
+    function setPresence(available) {
+        clientChannel.sendCommand({
+            id: newGuid(),
+            method: Lime.CommandMethod.SET,
+            uri: '/presence',
+            type: 'application/vnd.lime.presence+json',
+            resource: {
+                status: available ? 'available' : 'unavailable'
+            }
+        });
+    }
+    function sendMessage() {
+        event.preventDefault();
+        clientChannel.sendMessage({
+            id: newGuid(),
+            to: messageToInput.value,
+            type: 'text/plain',
+            content: messageContentInput.value
+        });
+        return false;
+    }
+
+    function newGuid() {
+        var d = new Date().getTime();
+        var uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+            var r = (d + Math.random() * 16) % 16 | 0;
+            d = Math.floor(d / 16);
+            return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+        return uuid;
+    }
+    </script>
+</body>
+</html>
