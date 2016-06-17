@@ -7,7 +7,10 @@
     "WebSocketTransport.js"
   ],
   "scripts": {
-    "test": "./node_modules/.bin/mocha ./test --recursive -w"
+    "test": "./node_modules/.bin/mocha ./test --recursive",
+    "test:watch": "./node_modules/.bin/mocha ./test --recursive -w",
+    "preversion": "npm test",
+    "postversion": "git push && git push --tags && npm publish"
   },
   "repository": {
     "type": "git",
