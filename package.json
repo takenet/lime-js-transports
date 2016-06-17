@@ -1,6 +1,6 @@
 {
   "name": "lime-transport-websocket",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "WebSocket transport class for the LIME protocol",
   "main": "WebSocketTransport.js",
   "files": [
