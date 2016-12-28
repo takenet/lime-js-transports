@@ -1,0 +1,38 @@
+{
+  "name": "lime-transport-http",
+  "version": "1.0.0",
+  "description": "HTTP transport class for the LIME protocol",
+  "main": "HttpTransport.js",
+  "files": [
+    "HttpTransport.js"
+  ],
+  "scripts": {
+    "test": "./node_modules/.bin/mocha ./test --recursive",
+    "test:watch": "./node_modules/.bin/mocha ./test --recursive -w",
+    "preversion": "npm test",
+    "postversion": "git push && git push --tags && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/takenet/lime-js-transports.git"
+  },
+  "keywords": [
+    "lime",
+    "http",
+    "transport"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/takenet/lime-js-transports/issues"
+  },
+  "homepage": "https://github.com/takenet/lime-js-transports#readme",
+  "dependencies": {
+    "lime-js": "^2.0.1",
+    "request": "^2.79.0",
+    "request-promise": "^4.1.1"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^2.5.3"
+  }
+}
