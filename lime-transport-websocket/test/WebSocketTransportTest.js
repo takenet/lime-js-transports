@@ -6,9 +6,6 @@ require('chai').should();
 
 describe('WebSocketTransport tests', function() {
 
-    var fvoid = function() { return undefined; };
-    var fid = function(x) { return x; };
-
     before(function(done) {
         this.server = new WebSocketLimeServer();
         this.server

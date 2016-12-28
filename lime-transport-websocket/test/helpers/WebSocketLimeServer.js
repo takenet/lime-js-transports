@@ -43,17 +43,17 @@ WebSocketLimeServer.prototype._onConnection = function(request) {
         // Session
         if (Lime.Envelope.isSession(envelope)) {
             switch(envelope.state) {
-                case 'new':
+            case 'new':
                 socket.sendJSON(TestEnvelopes.Sessions.authenticating);
                 break;
-                case 'authenticating':
+            case 'authenticating':
                 socket.sendJSON(TestEnvelopes.Sessions.established);
             }
         }
         // Command
         else if (Lime.Envelope.isCommand(envelope)) {
             switch(envelope.uri) {
-                case '/ping':
+            case '/ping':
                 socket.sendJSON(TestEnvelopes.Commands.pingResponse(envelope));
                 break;
             }
@@ -61,7 +61,7 @@ WebSocketLimeServer.prototype._onConnection = function(request) {
         // Message
         else if (Lime.Envelope.isMessage(envelope)) {
             switch(envelope.content) {
-                case 'ping':
+            case 'ping':
                 socket.sendJSON(TestEnvelopes.Messages.pong);
                 break;
             }
@@ -69,7 +69,7 @@ WebSocketLimeServer.prototype._onConnection = function(request) {
         // Notification
         else if (Lime.Envelope.isNotification(envelope)) {
             switch(envelope.event) {
-                case 'ping':
+            case 'ping':
                 socket.sendJSON(TestEnvelopes.Notifications.pong);
                 break;
             }

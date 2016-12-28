@@ -10,8 +10,10 @@
     }
 }(this, function (Lime, Promise, WebSocket) {
 
-    var fvoid = function() { return undefined; };
-    var log = console ? (console.debug || console.log).bind(console) : fvoid;
+    var fvoid = function() {};
+    var log = console
+        ? (console.debug || console.log).bind(console)  // eslint-disable-line no-console
+        : fvoid;
 
     function ensureSocketOpen(webSocket) {
         if (!webSocket || webSocket.readyState !== webSocket.OPEN) {
@@ -73,7 +75,7 @@
                 var err = new Error(e.toString());
                 reject(err);
                 self.onError(err);
-            }
+            };
         });
 
         self._webSocket.close();
@@ -94,11 +96,11 @@
     };
     WebSocketTransport.prototype.onEnvelope = fvoid;
     WebSocketTransport.prototype.getSupportedCompression = function() {
-        return [SessionCompression.NONE];
+        return [Lime.SessionCompression.NONE];
     };
     WebSocketTransport.prototype.setCompression = fvoid;
     WebSocketTransport.prototype.getSupportedEncryption = function() {
-        return [SessionEncryption.TLS, SessionEncryption.NONE];
+        return [Lime.SessionEncryption.TLS, Lime.SessionEncryption.NONE];
     };
     WebSocketTransport.prototype.setEncryption = fvoid;
     WebSocketTransport.prototype.onOpen = fvoid;
