@@ -178,12 +178,13 @@
             break;
 
         case Lime.SessionState.AUTHENTICATING:
+            if (!envelope.authentication) throw new Error('Invalid authentication scheme');
+
             var hasValidScheme = schemeOptions.some(function(scheme) {
                 return !!envelope.authentication[scheme];
             });
 
-            if (!envelope.authentication || !hasValidScheme)
-                throw new Error('Invalid authentication scheme');
+            if (!hasValidScheme) throw new Error('Invalid authentication scheme');
 
             this._authentication = envelope.authentication;
             this._authorization = this._authentication[Lime.AuthenticationScheme.KEY]
@@ -199,15 +200,21 @@
             this._pollTimeout = setTimeout(this.poll.bind(this), this._pollingInterval);
             break;
 
+        case Lime.SessionState.FINISHING:
+            this._session = {
+                state: Lime.SessionState.FINISHED
+            };
+            break;
+
         default:
-            throw new Error('Cannot send a session envelope when a session is already open in the state ' + this._session.state);
+            throw new Error('Invalid session envelope "' + envelope.state + '". A session is already open with the state ' + this._session.state);
         }
 
         if (this._traceEnabled) {
             log('HTTP SEND: ' + JSON.stringify(envelope));
         }
 
-        this.onEnvelope(this._session);
+        receiveEnvelope.call(this, this._session);
     }
 
     return HttpTransport;
