@@ -31,7 +31,7 @@ HttpLimeServer.prototype._onRequest = function(request, response) {
             .on('data', function(chunk) { body.push(chunk); })
             .on('end', function() {
                 body = Buffer.concat(body).toString();
-                self._onEnvelope(request.headers.authorization, JSON.parse(body));
+                self._onEnvelope(response, request.headers.authorization, JSON.parse(body));
             });
     }
 };
@@ -48,7 +48,7 @@ HttpLimeServer.prototype._sendQueuedEnvelopes = function(response, from) {
     }
 };
 
-HttpLimeServer.prototype._onEnvelope = function(from, envelope) {
+HttpLimeServer.prototype._onEnvelope = function(response, from, envelope) {
     if (!this._envelopes[from])
         this._envelopes[from] = [];
 
@@ -56,7 +56,8 @@ HttpLimeServer.prototype._onEnvelope = function(from, envelope) {
     if (Lime.Envelope.isCommand(envelope)) {
         switch(envelope.uri) {
         case '/ping':
-            this._answer(from, TestEnvelopes.Commands.pingResponse(envelope));
+            response.writeHead(200, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify(TestEnvelopes.Commands.pingResponse(envelope)));
             break;
         }
     }
