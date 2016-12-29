@@ -1,6 +1,5 @@
 {
   "name": "lime-transport-http",
-  "version": "1.0.0",
   "description": "HTTP transport class for the LIME protocol",
   "main": "HttpTransport.js",
   "files": [
