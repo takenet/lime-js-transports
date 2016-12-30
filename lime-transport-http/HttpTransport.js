@@ -27,7 +27,7 @@
             var request = new XMLHttpRequest();
             request.onreadystatechange = function() {
                 if (this.readyState !== 4) return;
-                if (this.status >= 200 && this.status <= 203)
+                if (this.status >= 200 && this.status <= 206)
                     resolve(this.responseText);
                 else
                     reject(this.response);
@@ -41,16 +41,29 @@
         });
     };
 
+    var defaultSettings = {
+        remoteNode: undefined,
+        localNode: undefined,
+        pollingInterval: 5000,
+        envelopeURIs: {
+            messages: { send: '/messages', receive: '/messages/inbox' },
+            notifications: { send: '/notifications', receive: '/notifications/inbox' },
+            commands: { send: '/commands' }
+        }
+    };
+
     // class HttpTransport
-    var HttpTransport = function(remoteNode, localNode, pollingInterval, traceEnabled) {
-        this._remoteNode = remoteNode;
-        this._localNode = localNode;
-        this._pollingInterval = pollingInterval || 5000;
+    var HttpTransport = function(settings, traceEnabled) {
+        this._remoteNode = settings.remoteNode || defaultSettings.remoteNode;
+        this._localNode = settings.localNode || defaultSettings.localNode;
+        this._pollingInterval = settings.pollingInterval || defaultSettings.pollingInterval;
+        this._envelopeURIs = settings.envelopeURIs || defaultSettings.envelopeURIs;
         this._traceEnabled = traceEnabled || false;
 
         this._uri = null;
         this._session = null;
         this._authentication = null;
+        this._closing = false;
 
         this.encryption = Lime.SessionEncryption.NONE;
         this.compression = Lime.SessionCompression.NONE;
@@ -67,45 +80,42 @@
         if (!this._session) throw new Error('Cannot fetch envelopes without an established session');
         if (this._session.state !== Lime.SessionState.ESTABLISHED) throw new Error('Cannot fetch envelopes in the ' + this._session.state + ' state');
 
-        return request({
-            method: 'GET',
-            uri: this._uri + '?from=' + this._localNode,
-            headers: {
-                'Authorization': this._authorization,
-            }
-        })
-            .then(function(response) {
-                response = JSON.parse(response);
-                if (response instanceof Array) {
-                    response.forEach(receiveEnvelope.bind(self));
-                }
-                else {
-                    receiveEnvelope.call(self, response);
-                }
-            })
-            .catch(function(error) {
-                self.onError(error);
-            })
+        return Promise.all([
+            fetchEnvelopes.call(this, this._uri + getEnvelopeURI.call(this, 'messages', 'receive')),
+            fetchEnvelopes.call(this, this._uri + getEnvelopeURI.call(this, 'notifications', 'receive'))
+        ])
             .finally(function() {
                 clearTimeout(self._pollTimeout);
-                self._pollTimeout = setTimeout(self.poll.bind(self), self._pollingInterval);
+                if (!self._closing)
+                    self._pollTimeout = setTimeout(self.poll.bind(self), self._pollingInterval);
             });
     };
 
     HttpTransport.prototype.close = function() {
+        this._closing = true;
         clearTimeout(this._pollTimeout);
         return Promise.resolve();
     };
 
     HttpTransport.prototype.send = function(envelope) {
+        var self = this;
         if (Lime.Envelope.isSession(envelope)) {
-            return sendSession.call(this, envelope);
+            sendSession.call(this, envelope);
         }
         else if (Lime.Envelope.isCommand(envelope)) {
-            return sendCommand.call(this, envelope);
+            sendEnvelope.call(this, envelope, this._uri + getEnvelopeURI.call(this, 'commands', 'send'))
+                .then(function(response) { receiveEnvelope.call(self, JSON.parse(response)); })
+                .catch(function(error) { self.onError(error); });
         }
-
-        return sendEnvelope.call(this, envelope);
+        else if (Lime.Envelope.isNotification(envelope)) {
+            sendEnvelope.call(this, envelope, this._uri + getEnvelopeURI.call(this, 'notifications', 'send'));
+        }
+        else if (Lime.Envelope.isMessage(envelope)) {
+            sendEnvelope.call(this, envelope, this._uri + getEnvelopeURI.call(this, 'messages', 'send'));
+        }
+        else {
+            throw new Error('Invalid envelope type');
+        }
     };
 
     HttpTransport.prototype.onEnvelope = fvoid;
@@ -124,6 +134,27 @@
     HttpTransport.prototype.onClose = fvoid;
     HttpTransport.prototype.onError = fvoid;
 
+    function fetchEnvelopes(uri) {
+        var self = this;
+        return request({
+            method: 'GET',
+            uri: uri,
+            headers: {
+                'Authorization': this._authorization,
+            }
+        })
+            .catch(function(error) { self.onError(error); })
+            .then(function(response) {
+                response = JSON.parse(response);
+                if (response instanceof Array) {
+                    response.forEach(receiveEnvelope.bind(self));
+                }
+                else {
+                    receiveEnvelope.call(self, response);
+                }
+            });
+    }
+
     function receiveEnvelope(envelope) {
         if (this._traceEnabled) {
             log('HTTP RECEIVE: ' + JSON.stringify(envelope));
@@ -131,7 +162,8 @@
         this.onEnvelope(envelope);
     }
 
-    function sendEnvelope(envelope) {
+    function sendEnvelope(envelope, uri) {
+        var self = this;
         var envelopeString = JSON.stringify(envelope);
 
         if (!this._session) throw new Error('Cannot send envelopes without an established session');
@@ -139,29 +171,20 @@
 
         var promise = request({
             method: 'POST',
-            uri: this._uri,
+            uri: uri,
             body: envelopeString,
             headers: {
                 'Authorization': this._authorization,
+                'Content-Type': 'application/json'
             }
-        });
+        })
+            .catch(function(error) { self.onError(error); });
 
         if (this._traceEnabled) {
-            log('HTTP SEND: ' + envelopeString);
+            log('HTTP SEND ' + uri + ' ' + envelopeString);
         }
 
         return promise;
-    }
-
-    function sendCommand(envelope) {
-        var self = this;
-        sendEnvelope.call(this, envelope)
-            .then(function(response) {
-                receiveEnvelope.call(self, response);
-            })
-            .catch(function(error) {
-                self.onError(error);
-            });
     }
 
     function sendSession(envelope) {
@@ -215,6 +238,12 @@
         }
 
         receiveEnvelope.call(this, this._session);
+    }
+
+    function getEnvelopeURI(type, method) {
+        return typeof this._envelopeURIs[type] === 'object'
+            ? this._envelopeURIs[type][method]
+            : this._envelopeURIs[type];
     }
 
     return HttpTransport;
