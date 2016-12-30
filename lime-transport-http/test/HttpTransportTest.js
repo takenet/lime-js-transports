@@ -21,16 +21,18 @@ describe('HttpTransport tests', function() {
     });
 
     beforeEach(function(done) {
-        this.transport = new HttpTransport('remote@node.com', 'local@node.com', 500);
+        this.transport = buildHttpTransport('local@test.com');
         this.transport
-            .open('http://127.0.0.1:8124/')
+            .open('http://127.0.0.1:8124')
             .then(done);
     });
 
     afterEach(function(done) {
         this.transport
             .close()
-            .then(done);
+            .then(function() {
+                setTimeout(done, 500);
+            });
     });
 
     it('should emulate sessions', function(done) {
@@ -56,23 +58,52 @@ describe('HttpTransport tests', function() {
         this.transport.send({ state: NEW });
     });
 
+    it('should send and receive notifications', function(done) {
+        authenticate(this.transport, 'MTIzNDU2');
+        this.transport.onEnvelope = function(envelope) {
+            if (envelope.event === 'pong')
+                done();
+        };
+        this.transport.send({ event: 'ping' });
+        // this.transport.poll();
+    });
+
     it('should send and receive messages', function(done) {
+        authenticate(this.transport, 'MTIzNDU2');
         this.transport.onEnvelope = function(envelope) {
             if (envelope.content === 'pong')
                 done();
         };
-        authenticate(this.transport, 'MTIzNDU2');
         this.transport.send({ content: 'ping' });
+        // this.transport.poll();
     });
 
     it('should send and receive commands', function(done) {
         this.transport.onEnvelope = function(envelope) {
-            if (envelope.content === 'pong') {
+            if (envelope.status === 'success')
                 done();
-            }
         };
         authenticate(this.transport, 'MTIzNDU2');
-        this.transport.send({ content: 'ping' });
+        this.transport.send({ method: 'get', uri: '/ping' });
+    });
+
+    it('should handle transport errors', function(done) {
+        var transportError = new HttpTransport({
+            remoteNode: 'remote@test.com',
+            localNode: 'error@test.com',
+            pollingInterval: 500,
+            envelopeURIs: {
+                messages: '/error',
+                notifications: '/error',
+                commands: '/error'
+            }
+        });
+        transportError.onError = function() {
+            transportError.close();
+            done();
+        };
+        authenticate(transportError, 'MTIzNDU2');
+        transportError.send({ content: 'hello!' });
     });
 
     it('should receive broadcast messages', function(done) {
@@ -80,7 +111,7 @@ describe('HttpTransport tests', function() {
         var transport1Received = false;
         var transport2Received = false;
 
-        var transport2 = new HttpTransport('remote@node.com', 'local2@node.com', 500);
+        var transport2 = buildHttpTransport('local2@test.com');
 
         this.transport.onEnvelope = function(envelope) {
             if (envelope.content === 'test') transport1Received = true;
@@ -92,7 +123,7 @@ describe('HttpTransport tests', function() {
         };
 
         transport2
-            .open('http://127.0.0.1:8124/')
+            .open('http://127.0.0.1:8124')
             .then(function() {
                 authenticate(transport2, 'NjU0MzIx');
                 transport2.send({ method: 'set' });
@@ -109,6 +140,14 @@ describe('HttpTransport tests', function() {
         this.server.close();
     });
 });
+
+function buildHttpTransport(localNode) {
+    return new HttpTransport({
+        remoteNode: 'remote@test.com',
+        localNode: localNode,
+        pollingInterval: 500
+    });
+}
 
 function authenticate(transport, key) {
     transport.send({ state: NEW });
