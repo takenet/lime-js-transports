@@ -65,7 +65,6 @@ describe('HttpTransport tests', function() {
                 done();
         };
         this.transport.send({ event: 'ping' });
-        // this.transport.poll();
     });
 
     it('should send and receive messages', function(done) {
@@ -75,7 +74,6 @@ describe('HttpTransport tests', function() {
                 done();
         };
         this.transport.send({ content: 'ping' });
-        // this.transport.poll();
     });
 
     it('should send and receive commands', function(done) {

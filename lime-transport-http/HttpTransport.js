@@ -46,8 +46,8 @@
         localNode: undefined,
         pollingInterval: 5000,
         envelopeURIs: {
-            messages: { send: '/messages', receive: '/messages/inbox' },
-            notifications: { send: '/notifications', receive: '/notifications/inbox' },
+            messages: { send: '/messages', receive: '/messages/inbox?keepStorage=false' },
+            notifications: { send: '/notifications', receive: '/notifications/inbox?keepStorage=false' },
             commands: { send: '/commands' }
         }
     };
