@@ -9,11 +9,13 @@ describe('WebSocketHttpTransport tests', function() {
 
     it('should use WebSocketTransport if web sockets are available', function() {
         global.WebSocket = function() {};
-        (new WebSocketHttpTransport instanceof WebSocketTransport).should.be.true;
+        (new WebSocketHttpTransport() instanceof WebSocketTransport).should.be.true;
     });
 
     it('should use HttpTransport if web sockets aren\'t available', function() {
         global.WebSocket = undefined;
-        (new WebSocketHttpTransport instanceof HttpTransport).should.be.true;
+        var transport = new WebSocketHttpTransport({ localNode: 'test@test.com' });
+        (transport instanceof HttpTransport).should.be.true;
+        transport._localNode.should.be.equal('test@test.com');
     });
 });

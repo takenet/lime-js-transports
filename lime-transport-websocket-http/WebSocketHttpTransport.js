@@ -24,9 +24,9 @@
     // class WebSocketHttpTransport
     var WebSocketHttpTransport = function() {
         if (root.WebSocket && typeof root.WebSocket === 'function') {
-            return new (Function.prototype.bind.apply(WebSocketTransport, [this].concat(arguments)))();
+            return new (Function.prototype.bind.apply(WebSocketTransport, [this].concat(Array.prototype.slice.call(arguments))))();
         }
-        return new (Function.prototype.bind.apply(HttpTransport, [this].concat(arguments)))();
+        return new (Function.prototype.bind.apply(HttpTransport, [this].concat(Array.prototype.slice.call(arguments))))();
     };
 
     return WebSocketHttpTransport;
