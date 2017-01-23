@@ -28,8 +28,7 @@
   "homepage": "https://github.com/takenet/lime-js-transports#readme",
   "dependencies": {
     "lime-js": "^2.0.1",
-    "request": "^2.79.0",
-    "request-promise": "^4.1.1"
+    "request": "^2.79.0"
   },
   "devDependencies": {
     "body-parser": "^1.15.2",
