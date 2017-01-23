@@ -6,7 +6,7 @@
     } else if (typeof exports === 'object') {
         exports['WebSocketHttpTransport'] = factory(require('lime-transport-http'), require('lime-transport-websocket'));
     } else {
-        root['WebSocketHttpTransport'] = factory(root['HttpTransport'], root['WebSocketHttpTransport']);
+        root['WebSocketHttpTransport'] = factory(root['HttpTransport'], root['WebSocketTransport']);
     }
 }(this, function(HttpTransport, WebSocketTransport) {
 
