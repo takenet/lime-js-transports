@@ -4,6 +4,7 @@ var http = require('http');
 var express = require('express');
 var bodyParser = require('body-parser');
 var Promise = require('bluebird');
+var Base64 = require('js-base64').Base64;
 var Lime = require('lime-js');
 var TestEnvelopes = require('./TestEnvelopes');
 
@@ -18,7 +19,15 @@ var HttpLimeServer = function() {
     var self = this;
     this._app.use(bodyParser.json());
     this._app.use(function(request, response, next) {
-        var from = request.headers.authorization;
+        var auth = request.headers.authorization.split(' ');
+
+        if (auth[0] === 'Basic') {
+            if (Base64.decode(auth[1]).split(':')[1] !== '123456')
+                throw new Error('Basic authorization credentials do not match');
+        }
+
+        var from = getFrom(request.headers.authorization);
+
         if (!self._nodes[from])
             self._nodes[from] = { messages: [], notifications: [] };
         next();
@@ -40,7 +49,7 @@ HttpLimeServer.prototype.broadcast = function(envelope) {
 };
 
 HttpLimeServer.prototype._sendQueuedEnvelopes = function(type, request, response) {
-    var from = request.headers.authorization;
+    var from = getFrom(request.headers.authorization);
     response.json(this._nodes[from][type]);
     response.end();
     this._nodes[from][type] = [];
@@ -50,7 +59,7 @@ HttpLimeServer.prototype._onMessage = function(request, response) {
     var envelope = request.body;
     switch(envelope.content) {
     case 'ping':
-        this._queueEnvelope(request.headers.authorization, TestEnvelopes.Messages.pong);
+        this._queueEnvelope(getFrom(request.headers.authorization), TestEnvelopes.Messages.pong);
         break;
     }
     response.end();
@@ -60,7 +69,7 @@ HttpLimeServer.prototype._onNotification = function(request, response) {
     var envelope = request.body;
     switch(envelope.event) {
     case 'ping':
-        this._queueEnvelope(request.headers.authorization, TestEnvelopes.Notifications.pong);
+        this._queueEnvelope(getFrom(request.headers.authorization), TestEnvelopes.Notifications.pong);
         break;
     }
     response.end();
@@ -84,5 +93,12 @@ HttpLimeServer.prototype._queueEnvelope = function(from, envelope) {
     else
         throw new Error('Can\'t queue envelope ' + envelope);
 };
+
+function getFrom(authorization) {
+    var auth = authorization.split(' ');
+    return auth[0] === 'Basic'
+        ? Base64.decode(auth[1]).split(':')[0]
+        : auth[1];
+}
 
 module.exports = HttpLimeServer;

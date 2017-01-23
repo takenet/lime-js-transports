@@ -62,7 +62,7 @@ describe('HttpTransport tests', function() {
     });
 
     it('should send and receive notifications', function(done) {
-        authenticate(this.transport, 'MTIzNDU2');
+        authenticate(this.transport);
         this.transport.onEnvelope = function(envelope) {
             if (envelope.event === 'pong')
                 done();
@@ -71,7 +71,7 @@ describe('HttpTransport tests', function() {
     });
 
     it('should send and receive messages', function(done) {
-        authenticate(this.transport, 'MTIzNDU2');
+        authenticate(this.transport);
         this.transport.onEnvelope = function(envelope) {
             if (envelope.content === 'pong')
                 done();
@@ -84,7 +84,7 @@ describe('HttpTransport tests', function() {
             if (envelope.status === 'success')
                 done();
         };
-        authenticate(this.transport, 'MTIzNDU2');
+        authenticate(this.transport);
         this.transport.send({ method: 'get', uri: '/ping' });
     });
 
@@ -103,7 +103,7 @@ describe('HttpTransport tests', function() {
             transportError.close();
             done();
         };
-        authenticate(transportError, 'MTIzNDU2');
+        authenticate(transportError);
         transportError.send({ content: 'hello!' });
     });
 
@@ -126,14 +126,14 @@ describe('HttpTransport tests', function() {
         transport2
             .open('http://127.0.0.1:8124')
             .then(function() {
-                authenticate(transport2, 'NjU0MzIx');
+                authenticate(transport2);
                 transport2.send({ method: 'set' });
                 setTimeout(function() {
                     server.broadcast({ type: 'text/plain', content: 'test' });
                 }, 250);
             });
 
-        authenticate(this.transport, 'MTIzNDU2');
+        authenticate(this.transport);
         this.transport.send({ method: 'set' });
     });
 
@@ -150,12 +150,12 @@ function buildHttpTransport(localNode) {
     });
 }
 
-function authenticate(transport, key) {
+function authenticate(transport) {
     transport.send({ state: NEW });
     transport.send({
         state: AUTHENTICATING,
         authentication: {
-            key: key
+            password: '123456'
         },
         scheme: PLAIN
     });
