@@ -204,7 +204,7 @@
             if (!envelope.authentication) throw new Error('Invalid authentication scheme');
 
             var hasValidScheme = schemeOptions.some(function(scheme) {
-                return !!envelope.authentication[scheme];
+                return envelope.scheme === scheme;
             });
 
             if (!hasValidScheme) throw new Error('Invalid authentication scheme');

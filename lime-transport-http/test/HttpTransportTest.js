@@ -9,6 +9,8 @@ var ESTABLISHED = Lime.SessionState.ESTABLISHED;
 var FINISHING = Lime.SessionState.FINISHING;
 var FINISHED = Lime.SessionState.FINISHED;
 
+var PLAIN = Lime.AuthenticationScheme.PLAIN;
+
 require('chai').should();
 
 describe('HttpTransport tests', function() {
@@ -43,7 +45,8 @@ describe('HttpTransport tests', function() {
             case AUTHENTICATING:
                 transport.send({
                     state: AUTHENTICATING,
-                    authentication: { key: 'MTIzNDU2' }
+                    authentication: { key: 'MTIzNDU2' },
+                    scheme: PLAIN
                 });
                 break;
             case ESTABLISHED:
@@ -153,6 +156,7 @@ function authenticate(transport, key) {
         state: AUTHENTICATING,
         authentication: {
             key: key
-        }
+        },
+        scheme: PLAIN
     });
 }
