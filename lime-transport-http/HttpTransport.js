@@ -217,6 +217,7 @@
             if (!hasValidScheme) throw new Error('Invalid authentication scheme');
 
             this._authentication = envelope.authentication;
+            this._authentication.scheme = envelope.scheme;
             this._authorization = this._authentication.scheme === Lime.AuthenticationScheme.KEY
                 ? 'Key ' + this._authentication.key
                 : 'Basic ' + Base64.encode(this._localNode + ':' + Base64.decode(this._authentication.password));
