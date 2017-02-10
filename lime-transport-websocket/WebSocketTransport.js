@@ -22,7 +22,7 @@
     }
 
     // class WebSocketTransport
-    var WebSocketTransport = function(traceEnabled) {
+    var WebSocketTransport = function(settings, traceEnabled) {
         this._traceEnabled = traceEnabled || false;
         this._webSocket = null;
         this.encryption = Lime.SessionEncryption.NONE;
