@@ -90,22 +90,24 @@ describe('HttpTransport tests', function() {
     });
 
     it('should handle transport errors', function(done) {
-        var transportError = new HttpTransport({
-            remoteNode: 'remote@test.com',
-            localNode: 'error@test.com',
-            pollingInterval: 500,
-            envelopeURIs: {
-                messages: '/error',
-                notifications: '/error',
-                commands: '/error'
-            }
-        });
-        transportError.onError = function() {
-            transportError.close();
+        this.transport.onError = function() {
             done();
         };
-        authenticate(transportError);
-        transportError.send({ content: 'hello!' });
+        authenticate(this.transport);
+        this.transport.send({ method: 'get', uri: '/error' });
+    });
+
+    it('should handle HTTP authorization errors', function(done) {
+        authenticate(this.transport, '1nv@l1dP@55w0rd');
+        this.transport.onEnvelope = function(envelope) {
+            if (!Lime.Envelope.isSession(envelope))
+                return;
+
+            envelope.state.should.equal(Lime.SessionState.FAILED);
+            envelope.reason.code.should.equal(13);
+            done();
+        };
+        this.transport.send({ content: 'ping' });
     });
 
     it('should receive broadcast messages', function(done) {
@@ -151,12 +153,13 @@ function buildHttpTransport(localNode) {
     });
 }
 
-function authenticate(transport) {
+function authenticate(transport, password) {
+    password = password || 'MTIzNDU2';
     transport.send({ state: NEW });
     transport.send({
         state: AUTHENTICATING,
         authentication: {
-            password: 'MTIzNDU2'
+            password: password
         },
         scheme: PLAIN
     });

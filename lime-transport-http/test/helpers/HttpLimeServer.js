@@ -22,8 +22,10 @@ var HttpLimeServer = function() {
         var auth = request.headers.authorization.split(' ');
 
         if (auth[0] === 'Basic') {
-            if (Base64.decode(auth[1]).split(':')[1] !== '123456')
-                throw new Error('Basic authorization credentials do not match');
+            if (Base64.decode(auth[1]).split(':')[1] !== '123456') {
+                response.sendStatus(401);
+                return;
+            }
         }
 
         var from = getFrom(request.headers.authorization);
@@ -80,6 +82,10 @@ HttpLimeServer.prototype._onCommand = function(request, response) {
     switch(envelope.uri) {
     case '/ping':
         response.json(TestEnvelopes.Commands.pingResponse(envelope));
+        response.end();
+        break;
+    case '/error':
+        response.sendStatus(404);
         response.end();
         break;
     }

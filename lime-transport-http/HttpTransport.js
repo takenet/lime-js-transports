@@ -59,6 +59,7 @@
     HttpTransport.prototype.poll = function() {
         var self = this;
 
+        if (!this._uri) throw new Error('Can\'t receive envelopes. Transport is not open');
         if (!this._session) throw new Error('Cannot fetch envelopes without an established session');
         if (this._session.state !== Lime.SessionState.ESTABLISHED) throw new Error('Cannot fetch envelopes in the ' + this._session.state + ' state');
 
@@ -80,6 +81,8 @@
     };
 
     HttpTransport.prototype.send = function(envelope) {
+        if (!this._uri) throw new Error('Can\'t send envelopes. Transport is not open');
+
         var self = this;
         if (Lime.Envelope.isSession(envelope)) {
             sendSession.call(this, envelope);
@@ -127,7 +130,7 @@
         })
             .catch(function(error) { self.onError(error); })
             .then(function(response) {
-                if (response.status !== 200)
+                if (response.status < 200 || response.status > 204)
                     return;
 
                 return response.json();
@@ -171,13 +174,35 @@
                 'Content-Type': 'application/json'
             }
         })
-            .catch(function(error) { self.onError(error); });
+            .then(function(response) {
+                return mapErrors.call(self, response);
+            })
+            .catch(function(error) {
+                self.onError(error);
+            });
 
         if (this._traceEnabled) {
             log('HTTP SEND ' + uri + ' ' + envelopeString);
         }
 
         return promise;
+    }
+
+    function mapErrors(response) {
+        if (response.status >= 200 && response.status <= 204)
+            return Promise.resolve(response);
+
+        switch (response.status) {
+        case 401:
+            this.send({
+                state: Lime.SessionState.FAILED,
+                reason: {
+                    code: Lime.ReasonCodes.SESSION_AUTHENTICATION_FAILED,
+                    description: 'Session authentication failed'
+                }
+            });
+            return Promise.reject();
+        }
     }
 
     function interceptEnvelope(envelope) {
@@ -235,6 +260,17 @@
             this._session = {
                 state: Lime.SessionState.FINISHED
             };
+            break;
+
+        case Lime.SessionState.FAILED:
+            if (!envelope.reason) throw new Error('Cannot have a failed session withou a reason');
+
+            this._session = {
+                from: this._session.from,
+                state: Lime.SessionState.FAILED,
+                reason: envelope.reason
+            };
+            this.close();
             break;
 
         default:
