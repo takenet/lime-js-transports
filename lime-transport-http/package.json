@@ -1,6 +1,6 @@
 {
   "name": "lime-transport-http",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "HTTP transport class for the LIME protocol",
   "main": "HttpTransport.js",
   "files": [
@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/takenet/lime-js-transports#readme",
   "dependencies": {
-    "lime-js": "^2.0.1",
+    "lime-js": "^3.0.1",
     "node-fetch": "^1.6.3"
   },
   "devDependencies": {
