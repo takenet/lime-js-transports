@@ -1,0 +1,40 @@
+{
+  "name": "lime-transport-signalr",
+  "version": "1.0.0",
+  "description": "SignalR transport class for the LIME protocol",
+  "main": "SignalRTransport.js",
+  "files": [
+    "SignalRTransport.js"
+  ],
+  "scripts": {
+    "test": "./node_modules/.bin/mocha ./test --recursive",
+    "test:watch": "./node_modules/.bin/mocha ./test --recursive -w",
+    "preversion": "npm test",
+    "postversion": "git push && git push --tags && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/takenet/lime-js-transports.git"
+  },
+  "keywords": [
+    "lime",
+    "signalr",
+    "http",
+    "transport"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/takenet/lime-js-transports/issues"
+  },
+  "homepage": "https://github.com/takenet/lime-js-transports#readme",
+  "dependencies": {
+    "lime-js": "^3.0.1",
+    "websocket": "^1.0.23"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^2.5.3",
+    "@microsoft/signalr": "3.1.2",
+    "sinon": "9.0.1"
+  }
+}
